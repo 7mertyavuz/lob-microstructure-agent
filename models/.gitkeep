@@ -1,0 +1,2 @@
+# Eğitilmiş model çıktıları buraya yazılır (direction_coeffs.json, *.npz).
+# Bu dosya klasörü repoda tutmak içindir; artefaktların kendisi .gitignore'da.
