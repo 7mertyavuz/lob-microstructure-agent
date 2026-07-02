@@ -8,17 +8,25 @@ normalize edilmiş PendingTx nesneleri üretir ve bir asyncio.Queue'ya basar.
     ardından `eth_getTransactionByHash` ile gövde çekilir.
   * Simülasyon: WSS_URL yoksa sentetik balina/MEV/retail işlemleri üretir,
     böylece node olmadan tüm boru hattı uçtan uca test edilebilir.
+
+CAS entegrasyonu (Faz 3): simülasyon modu ayrıca **enjekte edilebilir**
+hale getirildi. `driven=True` ile başlatılan bir `MempoolListener` kendi
+sentetik akışını üretmez; `cas-market-simulator`'ın "şu ajan şu emri verdi"
+dediği anlarda `inject(AgentOrder)` ile beslenir. Varsayılan (`driven=False`)
+davranış tamamen korunur — bkz. `docs/00-ORTAK-SOZLESME.md`.
 """
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import random
 from typing import Optional
 
 from config import CONFIG
-from src.models import PendingTx
+from src.models import PendingTx, AgentOrder
+from src.actor.wallet_profiler import ETH_USD
 from src.decode.tx_decoder import UNISWAP_V2_ROUTER, UNISWAP_V3_ROUTER, WETH
 
 log = logging.getLogger("ingest")
@@ -54,14 +62,62 @@ except Exception:  # pragma: no cover
     websockets = None
 
 
+# ---------------- Faz 3a: AgentOrder -> PendingTx (saf, deterministik) ----------------
+_V2_BUY_SELECTOR = "0x7ff36ab5"    # swapExactETHForTokens
+_V2_SELL_SELECTOR = "0x18cbafe5"   # swapExactTokensForETH
+_BASE_FEE_WEI = 20 * 10**9         # ~20 gwei varsayılan blok baz ücreti
+
+
+def order_to_pending_tx(order: AgentOrder) -> PendingTx:
+    """`AgentOrder`'ı (Katman 2 giriş sözleşmesi) `PendingTx`'e çevirir.
+
+    Saf ve deterministiktir: adres/hash `order` alanlarının hash'inden
+    türetilir (rastgelelik yok) — aynı `order` her zaman aynı `PendingTx`'i
+    üretir, böylece simülatör replay/test edebilir. Gas seviyesi
+    `src/actor/agent_profiles.py`'deki aktör profilleriyle tutarlıdır:
+    MEV_BOT yüksek gas (front-run deseni), diğerleri normal gas kullanır.
+    `value_wei`, `size_usd`'nin WETH-taraf karşılığıdır (`ETH_USD` oranıyla);
+    hem BUY hem SELL için `tx_decoder`/`classify` bunu `value_wei` fallback'i
+    üzerinden okur (bkz. `src/decode/tx_decoder.py::_decode_v2`).
+    """
+    salt = f"{order.token}|{order.side}|{order.size_usd}|{order.actor_label}|{order.ts.isoformat()}"
+    digest = hashlib.sha256(salt.encode()).hexdigest()
+    addr = "0x" + digest[:40]
+    tx_hash = "0x" + hashlib.sha256((salt + "|hash").encode()).hexdigest()
+
+    value_wei = int(max(order.size_usd, 0.0) / ETH_USD * 10**18)
+
+    if order.actor_label == "MEV_BOT":
+        # deterministik "yüksek gas" oranı: profildeki aggression=1.0'a karşılık
+        gas_price_wei = int(_BASE_FEE_WEI * 5.0)
+        selector = _V2_BUY_SELECTOR if order.side == "BUY" else _V2_SELL_SELECTOR
+    else:
+        gas_price_wei = int(_BASE_FEE_WEI * 1.15)
+        selector = _V2_BUY_SELECTOR if order.side == "BUY" else _V2_SELL_SELECTOR
+
+    calldata = selector + "0" * 64
+    return PendingTx(
+        tx_hash=tx_hash,
+        from_addr=addr,
+        to_addr=UNISWAP_V2_ROUTER,
+        value_wei=value_wei,
+        gas_price_wei=gas_price_wei,
+        input_data=calldata,
+    )
+
+
 class MempoolListener:
-    def __init__(self, out_queue: "asyncio.Queue[PendingTx]"):
+    def __init__(self, out_queue: "asyncio.Queue[PendingTx]", driven: bool = False):
         self.q = out_queue
+        self.driven = driven          # True → autonomous üretim kapalı, inject() ile beslenir
         self._stop = asyncio.Event()
         self._w3 = None  # lazy AsyncWeb3, tx gövdesi çekmek için
 
     async def run(self) -> None:
-        if CONFIG.simulation_mode:
+        if self.driven:
+            log.info("DRIVEN mod → autonomous üretim kapalı, inject() bekleniyor.")
+            await self._run_driven()
+        elif CONFIG.simulation_mode:
             log.warning("WSS_URL yok → SIMÜLASYON modu. Sentetik işlemler üretiliyor.")
             await self._run_simulation()
         else:
@@ -69,6 +125,23 @@ class MempoolListener:
 
     def stop(self) -> None:
         self._stop.set()
+
+    # ---------- Faz 3b: enjekte edilebilir (driven) mod ----------
+    async def _run_driven(self) -> None:
+        """Kendi kendine üretim yapmaz; `inject()` çağrıları kuyruğu besler.
+        Sadece durdurulana kadar bekler (autonomous mod korunmuş kalır,
+        bu yalnızca ek bir moddur)."""
+        await self._stop.wait()
+
+    async def inject(self, order: AgentOrder) -> None:
+        """Simülatörden gelen bir ajan emrini kuyruğa besler.
+
+        `order` → `PendingTx` (saf/deterministik `order_to_pending_tx`) →
+        mevcut decode→classify→feature yoluna sokulur (main.py worker'ları
+        aracılığıyla). autonomous modda da çağrılabilir (ekstra sentetik
+        akışa eklenir), ama tipik kullanım `driven=True` iledir."""
+        tx = order_to_pending_tx(order)
+        await self.q.put(tx)
 
     # ---------- Gerçek mod ----------
     async def _run_websocket(self) -> None:
@@ -142,7 +215,7 @@ class MempoolListener:
             input_data=inp.hex() if hasattr(inp, "hex") else str(inp),
         )
 
-    # ---------- Simülasyon ----------
+    # ---------- Simülasyon (autonomous, varsayılan — davranış korunur) ----------
     async def _run_simulation(self) -> None:
         archetypes = ["whale", "mev", "retail", "retail", "mev"]
         while not self._stop.is_set():

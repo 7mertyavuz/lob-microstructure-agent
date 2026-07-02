@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field, asdict
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -98,3 +99,49 @@ class PricePrediction:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+@dataclass
+class FlowState:
+    """CAS entegrasyonu Katman 1 çıktı sözleşmesi (docs/00-ORTAK-SOZLESME.md).
+
+    FlowFeed.latest(token) tarafından üretilir. Ham/temiz metrik verir,
+    ağırlık kararı vermez -- cas-market-simulator motoru bu alanları
+    kendi ağırlıklandırma mantığında kullanır. Bu tip, mevcut
+    FlowFeatures/PricePrediction hesaplamalarını değiştirmez; onları
+    tek bir dışa-dönük struct'ta paketler.
+
+    NOT: flow_imbalance/whale_net_usd gibi alanlar motorun kendi
+    order_flow/onchain_flow faktörleriyle kavramsal olarak örtüşebilir
+    (çift sayım riski) -- bkz. ortak sözleşme dokümanı.
+    """
+    token: str
+    flow_imbalance: float        # -1..+1, harmanlı (fast+slow) net alış/satış baskısı
+    vpin_toxicity: float         # 0..1, VPIN akış toksisitesi
+    whale_net_usd: float         # pencere içi balina net alış (USD, + alış)
+    actor_mix: dict[str, float]  # {"WHALE","MEV_BOT","RETAIL"} payları, toplam ~= 1.0
+    direction_prob_up: float     # 0..1, fiyatın yükselme olasılığı
+    lead_lag_spread: float       # CEX-DEX gecikme-düzeltmeli spread (canlı) / sentetik (sim)
+    regime: str                  # "normal" | "toxic" | "highvol"
+    ts: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self) -> dict:
+        d = asdict(self)
+        d["ts"] = self.ts.isoformat()
+        return d
+
+
+@dataclass
+class AgentOrder:
+    """CAS entegrasyonu Katman 2 giriş sözleşmesi (docs/00-ORTAK-SOZLESME.md).
+
+    Simülatörün (cas-market-simulator) sentetik bir ajanın verdiği emri
+    bu repoya beslemesi için kullanılır. PendingTx ile eşdeğer bilgiyi
+    taşır ki MempoolListener.inject() üzerinden aynı
+    decode->classify->feature yolundan geçebilsin.
+    """
+    token: str
+    side: str            # "BUY" | "SELL"
+    size_usd: float
+    actor_label: str      # "WHALE" | "MEV_BOT" | "RETAIL"
+    ts: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
