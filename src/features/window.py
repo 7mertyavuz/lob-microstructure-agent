@@ -106,6 +106,34 @@ class RollingFlow:
     def tokens(self) -> list[str]:
         return [t for t, b in self._buf.items() if b]
 
+    def actor_mix(self, token: str) -> dict:
+        """Pencere icindeki aktor paylari (WHALE/MEV_BOT/RETAIL), hacim-agirlikli.
+
+        CAS entegrasyonu FlowState.actor_mix alani icin -- additif, mevcut
+        features() imzasini degistirmez. Bos pencerede esit/notr dagilim
+        dondurur (uc aktor icin 1/3'er)."""
+        now = time.time()
+        self._evict(token, now)
+        buf = self._buf[token]
+        totals = {
+            ActorLabel.WHALE.value: 0.0,
+            ActorLabel.MEV_BOT.value: 0.0,
+            ActorLabel.RETAIL.value: 0.0,
+        }
+        grand_total = 0.0
+        for _, _, _, label, usd in buf:
+            key = label.value if label in (
+                ActorLabel.WHALE, ActorLabel.MEV_BOT, ActorLabel.RETAIL
+            ) else None
+            if key is None:
+                continue  # UNKNOWN aktor mix'e dahil edilmez
+            totals[key] += abs(usd)
+            grand_total += abs(usd)
+        if grand_total <= 0:
+            n = len(totals)
+            return {k: round(1.0 / n, 6) for k in totals}
+        return {k: round(v / grand_total, 6) for k, v in totals.items()}
+
 
 def _dir(side: Side) -> float:
     if side == Side.BUY:

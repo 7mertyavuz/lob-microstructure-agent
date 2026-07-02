@@ -74,16 +74,18 @@ Everything is **pure Python + NumPy** (no sklearn/torch) and runs in a
 
 ```
 src/
-  ingest/    mempool_listener.py     # Layer 1
+  ingest/    mempool_listener.py     # Layer 1 (+ inject()/driven mode, Faz 3)
   decode/    tx_decoder.py           # Layer 2 (V2/V3/V4/UR)
-  actor/     classifier.py · wallet_profiler.py · onchain_profiler.py
-  mev/       sandwich.py · jit_liquidity.py · arbitrage.py · builder_tip.py · zeromev_client.py
-  features/  window.py · vpin.py · lead_lag.py · fracdiff.py
+  actor/     classifier.py · wallet_profiler.py · onchain_profiler.py · agent_profiles.py
+  mev/       sandwich.py · jit_liquidity.py · arbitrage.py · builder_tip.py · zeromev_client.py · decision.py
+  features/  window.py (+ actor_mix) · vpin.py · lead_lag.py · fracdiff.py
   predict/   direction.py · regime.py · mlp.py · meta.py · economic.py
   train/     dataset.py · logreg.py · backtest.py · online.py
   pipeline/  bus.py
+  api/       flow_feed.py (FlowFeed) · sim_env.py (SimEnvironment)   # CAS köprüsü
 main.py · dashboard.py · dashboard.html · train.py · config.py
-tests/       11 test files
+docs/        00-ORTAK-SOZLESME.md   # FlowState/FlowFeed sözleşmesi
+tests/       15 test files
 ```
 
 ## Quickstart
@@ -104,8 +106,8 @@ stack runs end-to-end without an RPC endpoint. To go live, set `WSS_URL`
 ## Tests
 
 ```bash
-for t in tests/test_*.py; do python "$t"; done      # 11 files, no external deps
-# or, with pytest:  pytest -q
+for t in tests/test_*.py; do python "$t"; done      # 15 files, no external deps
+# or, with pytest:  pytest -q                        # 85 passed
 ```
 
 ## Going live (real data)
@@ -122,6 +124,67 @@ for t in tests/test_*.py; do python "$t"; done      # 11 files, no external deps
 
 **Data sources (no scraping needed):** zeromev REST API (MEV labels, keyless),
 direct RPC (wallet profiles), Dune/Etherscan (bulk labels & history).
+
+## cas-market-simulator entegrasyonu
+
+Bu repo, `cas-market-simulator` icin iki ince, test edilebilir kopru arayuzu
+sunar (mevcut 5 katmanli analist cekirdegini degistirmeden). Sozlesme:
+`docs/00-ORTAK-SOZLESME.md`.
+
+### Katman 1 -- `FlowFeed` (okuma arayuzu)
+
+```python
+from src.api import FlowFeed
+
+feed = FlowFeed(mode="simulation", seed=42)   # WSS_URL yoksa otomatik simulation
+state = feed.latest("UniswapV2")              # -> FlowState
+
+state.flow_imbalance     # -1..+1
+state.vpin_toxicity      # 0..1
+state.whale_net_usd
+state.actor_mix          # {"WHALE": .., "MEV_BOT": .., "RETAIL": ..} toplam ~= 1.0
+state.direction_prob_up  # 0..1
+state.lead_lag_spread
+state.regime             # "normal" | "toxic" | "highvol"
+state.ts                 # UTC, tz-aware
+```
+
+`FlowFeed`, mevcut `RollingFlow`/`predict.predict()` hesaplamalarini
+degistirmez -- onlari tek bir disa-donuk `FlowState` struct'inda paketler.
+Sim modu birinci sinif: harici API/anahtar olmadan gecerli `FlowState`
+uretir. **`FlowState` ham/temiz metrik saglar, agirlik karari vermez** --
+`cas-market-simulator`'in kendi `order_flow`/`onchain_flow` faktoruyle
+kavramsal ortusme (cift sayim) riski oldugu icin motor tarafi agirligi
+kendisi belirler.
+
+### Katman 2 -- ajan sablonu + enjekte edilebilir cevre
+
+```python
+from src.actor.agent_profiles import PROFILES   # WHALE / MEV_BOT / RETAIL (veri)
+from src.mev.decision import decide_sandwich, decide_jit, decide_arbitrage, decide_builder_tip
+from src.api import SimEnvironment
+from src.models import AgentOrder
+from datetime import datetime, timezone
+
+env = SimEnvironment(seed=1)
+order = AgentOrder(token="UniswapV2", side="BUY", size_usd=500_000,
+                    actor_label="WHALE", ts=datetime.now(timezone.utc))
+state = env.step([order], "UniswapV2")   # enjekte edilen emre gore guncellenmis FlowState
+```
+
+`src/actor/agent_profiles.py` uc aktor icin sabit, parametrik profil verir
+(kod degil, veri). `src/mev/*.py`'deki MEV tespit fonksiyonlari zaten yan
+etkisiz ve deterministiktir; `src/mev/decision.py` bunlari simulator-dostu
+tek bir cephede toplar. `MempoolListener` iki modda calisir: **autonomous**
+(varsayilan, mevcut davranis) ve **driven** (`MempoolListener(q, driven=True)`
++ `await listener.inject(order)` ile disaridan beslenir).
+
+### Sim / canli mod farki
+
+`WSS_URL` bos ise (`.env`'de varsayilan) her iki arayuz de otomatik olarak
+`simulation` moduna duser: deterministik (seed'e bagli) sentetik akisla,
+harici bagimlilik olmadan calisir. `WSS_URL` set edildiginde `FlowFeed`/
+`MempoolListener` gercek mempool/CEX-DEX besemesini kullanir.
 
 ## Disclaimer
 
