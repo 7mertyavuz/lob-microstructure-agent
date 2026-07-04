@@ -101,6 +101,53 @@ Enjekte edilen emirler kendi bağımsız `RollingFlow`'unu besler (autonomous
 ile aynı emirler gerçek asyncio kuyruğuna da beslenebilir. Autonomous
 (kendi kendine üreten, `driven=False`) mod korunur — bu, varsayılan davranıştır.
 
+## Katman 1b — `BookState` / `BookFeed` (emir defteri okuması)
+
+> Kaynak plan: `DEFTER-L3-OKUMA-PLANI.md`. `FlowState`'ten **ayrı** bir
+> struct'tır (akış ≠ defter); çift sayım sorumluluğu yine motordadır.
+
+`BookState`, `microstructure-analyzer`'ın defter okuma çıktısıdır. `FlowFeed`
+akışı (flow) okurken, `BookFeed` defteri (book) okur. Analist rolü korunur:
+ham/temiz metrik verir, ağırlık kararı vermez.
+
+### `BookState` (çıktı şeması)
+
+| Alan | Tip | Aralık | Açıklama |
+|---|---|---|---|
+| `symbol` | `str` | — | sembol anahtarı |
+| `spread_bps` | `float` | `≥0` | en iyi alış-satış farkı (bps) |
+| `microprice` | `float` | `>0` | derinlik-ağırlıklı adil fiyat (Stoikov) |
+| `depth_imbalance` | `float` | `[-1,1]` | çok-seviyeli, mesafe-ağırlıklı derinlik dengesizliği |
+| `ofi` | `float` | serbest | event-bazlı OFI (Cont-Kukanov-Stoikov) |
+| `queue_imbalance` | `float` | `[-1,1]` | en iyi seviye kuyruk dengesizliği |
+| `book_slope` | `float` | `≥0` | defter eğimi / esneklik |
+| `kyle_lambda` | `float` | `≥0` | hacim başına fiyat etkisi |
+| `iceberg_score` | `float` | `[0,1]` | gizli likidite **şüphesi** |
+| `spoof_score` | `float` | `[0,1]` | yanıltıcı katmanlama **şüphesi** |
+| `absorption` | `float` | `[-1,1]` | `+` = satış baskısı emiliyor (bid güçlü) |
+| `liq_map_skew` | `float` | `[-1,1]` | likidasyon yoğunluğu üstte(`+`)/altta(`−`) |
+| `ts` | `datetime` | UTC tz-aware | zaman damgası |
+
+```python
+class BookFeed:
+    def __init__(self, mode: str = "simulation", seed: int | None = None): ...
+    def latest(self, symbol: str) -> BookState: ...
+```
+
+- `mode`: `"simulation" | "live"`; `WSS_URL` boşsa otomatik `"simulation"`.
+- **Struct döndürür, print etmez.** Sim modu birinci sınıf, deterministik
+  (aynı seed → aynı `BookState` dizisi).
+- `iceberg_score` / `spoof_score` **kanıt değil şüphedir**: tek başına yön oyu
+  vermez, motor tarafında güven çarpanı olarak kullanılır. Yüksek `spoof_score`
+  iken `depth_imbalance`'ın güveni kısılmalıdır.
+
+### Çift sayım uyarısı (defter)
+
+`depth_imbalance` ile mevcut `flow_imbalance` korelasyonlu çıkabilir; `ofi`
+(defter-event) ile işlem-bazlı OFI ayrı faktörlerdir. İkisi de motora **düşük
+ağırlıkla** girer; `factor_tracker` pozitif katkı gösterene kadar ağırlık
+artmaz ("defter konuşur").
+
 ## Belirlilik (determinism) kuralı
 
 Simülatör replay/test edebilsin diye: `time.time()` yerine enjekte edilebilir
