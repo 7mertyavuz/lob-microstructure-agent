@@ -27,3 +27,7 @@ models/*.npz
 .pytest_cache/
 .coverage
 htmlcov/
+
+# İç planlama notları — localde kalır, repoya gitmez
+CAS-ENTEGRASYON-PLANI.md
+baseline_tests.txt

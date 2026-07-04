@@ -2,6 +2,19 @@
 
 Mempool → decode → classify → flow feature → yön tahmini + bus.
 
+Faz 1e (CAS entegrasyonu, opsiyonel iyileştirme): akış besleme/okuma artık
+`src.api.FlowFeed` üzerinden tek bir yoldan geçiyor (`feed.feed_live_signal()`
+/ `feed.flow`), ham `RollingFlow`'u main.py'de ayrıca yönetmek yerine. Bu,
+CAS köprüsünün (FlowFeed) canlı modda da gerçek besleme yolunu kullandığını
+garanti eder ve tek doğruluk kaynağı sağlar. Ekrana basılan çıktı ve akış
+DAVRANIŞ OLARAK DEĞİŞMEDİ — sadece veri yolu FlowFeed'e taşındı.
+
+Not: burada `feed.latest()` DEĞİL `feed.flow` doğrudan okunuyor, çünkü
+`latest()` simülasyon modunda ek sentetik trafik enjekte eder (bkz.
+`FlowFeed._feed_synthetic`); main.py'nin kendi ingest'i (MempoolListener,
+gerekirse zaten kendi simülasyon modunda) tek gerçek kaynak olmalı — çift
+sentetik üretim yaşanmasın diye.
+
 Çalıştırma:
     python main.py            # WSS_URL yoksa simülasyon
     BUS_BACKEND=redis python main.py
@@ -16,7 +29,7 @@ from src.models import PendingTx
 from src.ingest.mempool_listener import MempoolListener
 from src.decode.tx_decoder import decode_tx
 from src.actor.classifier import classify
-from src.features.window import RollingFlow
+from src.api import FlowFeed
 from src.predict.direction import predict
 from src.pipeline.bus import make_bus
 
@@ -32,7 +45,7 @@ PREDICT_EVERY_SEC = 5.0       # tahminleri kaç saniyede bir yayınla
 FLOW_WINDOW_SEC = 60.0        # akış imbalance pencere boyu
 
 
-async def worker(name: str, q: "asyncio.Queue[PendingTx]", bus, flow: RollingFlow) -> None:
+async def worker(name: str, q: "asyncio.Queue[PendingTx]", bus, feed: FlowFeed) -> None:
     while True:
         tx = await q.get()
         try:
@@ -40,7 +53,7 @@ async def worker(name: str, q: "asyncio.Queue[PendingTx]", bus, flow: RollingFlo
             if swap is None:
                 continue                  # router swap'i değil → ele
             signal = classify(swap)       # Katman 3
-            flow.add(signal)              # Katman 4 besle
+            feed.feed_live_signal(signal) # Katman 4 besle (FlowFeed üzerinden)
             await bus.publish(signal)     # pipeline
         except Exception:
             log.exception("worker %s işlem hatası", name)
@@ -48,12 +61,12 @@ async def worker(name: str, q: "asyncio.Queue[PendingTx]", bus, flow: RollingFlo
             q.task_done()
 
 
-async def predictor(flow: RollingFlow) -> None:
+async def predictor(feed: FlowFeed) -> None:
     """Katman 5 — periyodik yön tahmini yayınlar."""
     while True:
         await asyncio.sleep(PREDICT_EVERY_SEC)
-        for token in flow.tokens():
-            pred = predict(flow.features(token))
+        for token in feed.flow.tokens():
+            pred = predict(feed.flow.features(token))
             arrow = {"YUKARI": "📈", "AŞAĞI": "📉", "NÖTR": "➡️"}[pred.direction]
             print(
                 f"  {arrow} TAHMİN [{pred.token}] {pred.direction} "
@@ -73,10 +86,10 @@ async def main() -> None:
     bus = make_bus()
     await bus.start()
 
-    flow = RollingFlow(window_sec=FLOW_WINDOW_SEC)
+    feed = FlowFeed(mode="live", window_sec=FLOW_WINDOW_SEC)
     listener = MempoolListener(q)
-    workers = [asyncio.create_task(worker(f"w{i}", q, bus, flow)) for i in range(NUM_WORKERS)]
-    pred_task = asyncio.create_task(predictor(flow))
+    workers = [asyncio.create_task(worker(f"w{i}", q, bus, feed)) for i in range(NUM_WORKERS)]
+    pred_task = asyncio.create_task(predictor(feed))
     ingest_task = asyncio.create_task(listener.run())
 
     try:
