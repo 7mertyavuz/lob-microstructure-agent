@@ -21,6 +21,7 @@ import os
 
 from src.features.window import FlowFeatures
 from src.models import PricePrediction
+from src.book.state import BookState
 
 log = logging.getLogger("predict")
 
@@ -61,13 +62,45 @@ def _sigmoid(z: float) -> float:
 FAST_WEIGHT = 0.6
 
 
-def predict(feat: FlowFeatures) -> PricePrediction:
+# Defter okuma katkisi (D5): dusuk agirlik, guven carpani olarak kullanilir.
+BOOK_WEIGHT = 0.35
+BOOK_SPOOF_PENALTY = 0.4
+BOOK_LIQUIDITY_PENALTY = 0.25
+
+
+def _book_adjustment(book: BookState | None) -> tuple[float, float]:
+    """Defter okumalarindan ek skor ve guven carpani dondur.
+
+    Returns:
+        (extra_z, confidence_multiplier)
+    """
+    if book is None:
+        return 0.0, 1.0
+    # Yon sinyali: derinlik dengesizligi + emilim teyidi; spoof cezasi
+    spoof = getattr(book, "spoof_score", 0.0) or 0.0
+    signal = book.depth_imbalance * (1 - BOOK_SPOOF_PENALTY * spoof)
+    signal += 0.3 * getattr(book, "absorption", 0.0)
+    extra_z = BOOK_WEIGHT * signal
+
+    # Dar/incede veya yuksek fiyat etkisinde guveni kis
+    slope_penalty = 1.0 - BOOK_LIQUIDITY_PENALTY * min(1.0, book.book_slope / 10.0)
+    lambda_penalty = 1.0 - BOOK_LIQUIDITY_PENALTY * min(1.0, book.kyle_lambda / 1e-5)
+    mult = max(0.5, slope_penalty * lambda_penalty)
+    return extra_z, mult
+
+
+def predict(feat: FlowFeatures, book_state: BookState | None = None) -> PricePrediction:
     # Çok-ufuklu imbalance harmanı (hızlı + yavaş)
     fast = getattr(feat, "imbalance_fast", 0.0) or 0.0
     imbalance = FAST_WEIGHT * fast + (1 - FAST_WEIGHT) * feat.flow_imbalance
 
     z = B0 + B1 * imbalance + B2 * math.tanh(feat.whale_net_usd / WHALE_SCALE)
+    extra_z, book_mult = _book_adjustment(book_state)
+    z += extra_z
     prob_up = _sigmoid(z)
+
+    # Defter okuma guven carpani
+    prob_up = 0.5 + (prob_up - 0.5) * book_mult
 
     # Az veri varsa güveni 0.5'e doğru çek (belirsizliği yansıt)
     if feat.sample_count < MIN_SAMPLES:
@@ -88,7 +121,7 @@ def predict(feat: FlowFeatures) -> PricePrediction:
     )
 
 
-def predict_toxic(feat: FlowFeatures) -> PricePrediction:
+def predict_toxic(feat: FlowFeatures, book_state: BookState | None = None) -> PricePrediction:
     """Toksik/yüksek-volatilite rejimi tahmincisi (nonlineer stand-in).
 
     NOT: Burası gerçek sistemde OFFLINE eğitilmiş bir LSTM/CNN ile değiştirilir
@@ -99,7 +132,13 @@ def predict_toxic(feat: FlowFeatures) -> PricePrediction:
     vpin = getattr(feat, "vpin", 0.0) or 0.0
     # Daha çok hızlı ufka yaslan, tanh ile sıkıştır
     signal = math.tanh(1.5 * fast + 0.8 * math.tanh(feat.whale_net_usd / WHALE_SCALE))
+
+    # D5: defter okuma katkisi (toksik rejimde daha agresif guven kisilir)
+    extra_z, book_mult = _book_adjustment(book_state)
+    signal += extra_z
     prob_up = _sigmoid(2.0 * signal)
+    prob_up = 0.5 + (prob_up - 0.5) * book_mult
+
     # Toksik rejim → büyüklüğü güçlü bastır (0.5'e çek)
     prob_up = 0.5 + (prob_up - 0.5) * (1 - 0.5 * vpin)
     if feat.sample_count < MIN_SAMPLES:

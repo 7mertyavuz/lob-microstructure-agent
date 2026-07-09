@@ -18,6 +18,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from src.train.logreg import LogReg
+from src.book.state import BookState
 
 
 def primary_direction(prob_up: np.ndarray) -> np.ndarray:
@@ -58,11 +59,24 @@ class MetaLabeler:
         self.meta.fit(Xm, ym)
         return self
 
-    def decide(self, x_row, primary_prob_row) -> MetaDecision:
+    def decide(self, x_row, primary_prob_row,
+               book_state: BookState | None = None) -> MetaDecision:
         x = np.asarray(x_row, dtype=float).reshape(1, -1)
         conf = np.array([[abs(primary_prob_row - 0.5)]])
         xm = np.hstack([x, conf])
         size = float(self.meta.predict_proba(xm)[0])
+
+        # D5: likidite riskine gore boyut azaltma
+        if book_state is not None:
+            liq_mult = 1.0
+            if book_state.kyle_lambda > 0:
+                liq_mult *= max(0.5, 1.0 - book_state.kyle_lambda / 1e-5)
+            if book_state.book_slope > 0:
+                liq_mult *= max(0.5, 1.0 - book_state.book_slope / 10.0)
+            spoof = getattr(book_state, "spoof_score", 0.0) or 0.0
+            liq_mult *= max(0.5, 1.0 - spoof)
+            size *= liq_mult
+
         direction = int(primary_prob_row >= 0.5)
         return MetaDecision(direction=direction, size=round(size, 3),
                             take=size >= self.size_threshold)

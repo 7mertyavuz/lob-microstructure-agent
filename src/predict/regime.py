@@ -17,8 +17,11 @@ from typing import Callable
 
 import numpy as np
 
+from src.book.state import BookState
+
 NORMAL = "NORMAL"
 TOXIC = "TOXIC"
+THIN = "THIN"
 
 
 # ----------------- 2-durum Gaussian HMM -----------------
@@ -101,23 +104,48 @@ class RoutedPrediction:
 
 
 class RegimeRouter:
-    """vpin >= threshold → toxic_fn, aksi halde normal_fn.
+    """VPIN + defter okuma ile rejim yonlendirmesi.
 
-    normal_fn / toxic_fn: FlowFeatures alıp PricePrediction döndüren çağrılabilirler.
+    normal_fn / toxic_fn / thin_fn: FlowFeatures (ve opsiyonel BookState)
+    alip PricePrediction donduren cagrılabilirler.
     """
 
     def __init__(self, normal_fn: Callable, toxic_fn: Callable,
-                 vpin_threshold: float = 0.4):
+                 thin_fn: Callable | None = None,
+                 vpin_threshold: float = 0.4,
+                 spread_bps_threshold: float = 50.0,
+                 slope_threshold: float = 5.0,
+                 lambda_threshold: float = 1e-5):
         self.normal_fn = normal_fn
         self.toxic_fn = toxic_fn
+        self.thin_fn = thin_fn or toxic_fn
         self.vpin_threshold = vpin_threshold
+        self.spread_bps_threshold = spread_bps_threshold
+        self.slope_threshold = slope_threshold
+        self.lambda_threshold = lambda_threshold
 
-    def regime_of(self, vpin: float) -> str:
-        return TOXIC if vpin >= self.vpin_threshold else NORMAL
+    def regime_of(self, vpin: float, book_state: BookState | None = None) -> str:
+        if vpin >= self.vpin_threshold:
+            return TOXIC
+        if book_state is None:
+            return NORMAL
+        # D5: likidite rejimi -- ince defter de toksik gibi nonlineer modele gider
+        if book_state.spread_bps >= self.spread_bps_threshold:
+            return THIN
+        if book_state.book_slope >= self.slope_threshold:
+            return THIN
+        if book_state.kyle_lambda >= self.lambda_threshold:
+            return THIN
+        return NORMAL
 
-    def predict(self, feat):
+    def predict(self, feat, book_state: BookState | None = None):
         vpin = getattr(feat, "vpin", 0.0) or 0.0
-        regime = self.regime_of(vpin)
-        fn = self.toxic_fn if regime == TOXIC else self.normal_fn
-        pred = fn(feat)
+        regime = self.regime_of(vpin, book_state)
+        if regime == TOXIC:
+            fn = self.toxic_fn
+        elif regime == THIN:
+            fn = self.thin_fn
+        else:
+            fn = self.normal_fn
+        pred = fn(feat, book_state)
         return regime, pred

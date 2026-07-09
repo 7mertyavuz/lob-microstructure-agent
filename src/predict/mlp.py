@@ -13,6 +13,7 @@ import numpy as np
 
 from src.features.window import FlowFeatures
 from src.models import PricePrediction
+from src.book.state import BookState
 
 
 def _sigmoid(z):
@@ -85,7 +86,9 @@ def make_toxic_predictor(model: NumpyMLP):
     Dönen fonksiyon FlowFeatures alıp PricePrediction döndürür — predict_toxic
     ile aynı arayüz, böylece doğrudan RegimeRouter(normal_fn, toxic_fn)'e geçer.
     """
-    def _predict(feat: FlowFeatures) -> PricePrediction:
+    def _predict(feat: FlowFeatures, book_state: BookState | None = None) -> PricePrediction:
+        # D5: MLP su an book_state kullanmiyor; imza uyumlulugu icin kabul eder.
+        _ = book_state
         x = features_to_vector(feat)
         p = float(model.predict_proba(x)[0])
         vpin = getattr(feat, "vpin", 0.0) or 0.0
