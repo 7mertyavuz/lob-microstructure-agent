@@ -14,6 +14,7 @@ Plan: `DEFTER-L3-OKUMA-PLANI.md`. Sözleşme: `docs/00-ORTAK-SOZLESME.md`
 from src.book.state import BookState, RawBook, BookLevel, Trade, OrderEvent
 from src.book.feed import BookFeed
 from src.book.sim import SimBookFeed
+from src.book.dex_virtual_book import DexVirtualBook
 
 __all__ = [
     "BookState",
@@ -23,4 +24,5 @@ __all__ = [
     "OrderEvent",
     "BookFeed",
     "SimBookFeed",
+    "DexVirtualBook",
 ]

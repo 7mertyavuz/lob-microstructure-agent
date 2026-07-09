@@ -16,6 +16,7 @@ from src.config import CONFIG
 from src.book.state import BookState, RawBook, OrderEvent
 from src.book.sim import SimBookFeed
 from src.book.keeper import BookKeeper
+from src.book.dex_virtual_book import DexVirtualBook
 from src.book import features as F
 
 
@@ -34,16 +35,26 @@ def refills_from_events(events) -> list[tuple[float, float]]:
 
 
 class BookFeed:
-    """`latest(symbol) -> BookState`. mode: "simulation" | "live"."""
+    """`latest(symbol) -> BookState`.
+
+    mode: "simulation" | "live"
+    venue: "cex" | "dex"  -- "dex" V3 sanal defter (D4), "cex" klasik L2.
+    """
 
     def __init__(self, mode: str = "simulation", seed: int | None = None,
-                 base_price: float = 30_000.0, spread_hist: int = 64):
+                 base_price: float = 30_000.0, spread_hist: int = 64,
+                 venue: str = "cex"):
         if mode not in ("simulation", "live"):
             raise ValueError("mode 'simulation' ya da 'live' olmalı")
+        if venue not in ("cex", "dex"):
+            raise ValueError("venue 'cex' ya da 'dex' olmalı")
         self.mode = "simulation" if CONFIG.simulation_mode else mode
+        self.venue = venue
         self.seed = seed
+        self.base_price = base_price
         self._sim = SimBookFeed(seed=seed, base_price=base_price)
         self._keepers: dict[str, BookKeeper] = {}
+        self._dex_books: dict[str, DexVirtualBook] = {}
         # sembol-başına durum
         self._prev_best: dict[str, tuple[float, float, float, float]] = {}
         self._prev_mid: dict[str, float] = {}
@@ -55,8 +66,25 @@ class BookFeed:
         """Canlı modda dışarıdan (D1 WS worker'ı) beslenecek defter tutucu."""
         return self._keepers.setdefault(symbol, BookKeeper(symbol))
 
+    def dex_book(self, symbol: str) -> DexVirtualBook:
+        """D4: sembol basina sanal V3 defteri (yoksa olustur)."""
+        if symbol not in self._dex_books:
+            self._dex_books[symbol] = DexVirtualBook(
+                symbol=symbol,
+                base_price=self.base_price,
+                seed=self.seed,
+            )
+        return self._dex_books[symbol]
+
+    def inject_dex_swap(self, symbol: str, amount_usd: float, side: str,
+                        actor_label: str = "UNKNOWN") -> None:
+        """D4: V3 sanal defterine pending swap enjekte et."""
+        self.dex_book(symbol).inject_pending_swap(amount_usd, side, actor_label)
+
     # ---------- ham defter ----------
     def _raw(self, symbol: str) -> RawBook:
+        if self.venue == "dex":
+            return self.dex_book(symbol).step()
         if self.mode == "simulation":
             return self._sim.next(symbol)
         kp = self.keeper(symbol)
