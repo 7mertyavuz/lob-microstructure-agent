@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 
-from config import CONFIG
+from src.config import CONFIG
 from src.models import ActorSignal
 
 log = logging.getLogger("bus")

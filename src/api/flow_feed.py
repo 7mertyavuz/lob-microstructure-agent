@@ -21,7 +21,7 @@ from __future__ import annotations
 import random
 from datetime import datetime, timezone
 
-from config import CONFIG
+from src.config import CONFIG
 from src.models import FlowState
 from src.features.window import RollingFlow
 from src.features.lead_lag import LeadLagSpread

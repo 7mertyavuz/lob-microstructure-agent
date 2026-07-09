@@ -30,7 +30,7 @@ def test_profile_field_contract_matches_plan():
 def test_whale_size_consistent_with_classifier_threshold():
     # src/actor/classifier.py CONFIG.whale_usd_threshold varsayilan 100_000;
     # WHALE profilinin ust siniri bu esigin cok uzerinde olmali (celiskisiz).
-    from config import CONFIG
+    from src.config import CONFIG
     assert WHALE.size_usd[1] >= CONFIG.whale_usd_threshold
 
 

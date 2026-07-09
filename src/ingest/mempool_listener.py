@@ -24,7 +24,7 @@ import logging
 import random
 from typing import Optional
 
-from config import CONFIG
+from src.config import CONFIG
 from src.models import PendingTx, AgentOrder
 from src.actor.wallet_profiler import ETH_USD
 from src.decode.tx_decoder import UNISWAP_V2_ROUTER, UNISWAP_V3_ROUTER, WETH

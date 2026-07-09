@@ -17,7 +17,7 @@ Heuristikler:
 """
 from __future__ import annotations
 
-from config import CONFIG
+from src.config import CONFIG
 from src.models import DecodedSwap, ActorSignal, ActorLabel, Side
 from src.actor.wallet_profiler import get_profile, ETH_USD
 

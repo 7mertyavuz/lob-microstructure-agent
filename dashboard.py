@@ -14,7 +14,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from config import CONFIG
+from src.config import CONFIG
 from src.models import PendingTx
 from src.ingest.mempool_listener import MempoolListener
 from src.decode.tx_decoder import decode_tx

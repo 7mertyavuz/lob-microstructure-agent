@@ -12,7 +12,7 @@ from __future__ import annotations
 from collections import deque
 from datetime import datetime, timezone
 
-from config import CONFIG
+from src.config import CONFIG
 from src.book.state import BookState, RawBook, OrderEvent
 from src.book.sim import SimBookFeed
 from src.book.keeper import BookKeeper
