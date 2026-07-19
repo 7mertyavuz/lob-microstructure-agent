@@ -13,6 +13,8 @@ _Mempool'dan aktör etiketlemeye, order-flow okumalarından sanal emir defterine
 ![simulation](https://img.shields.io/badge/simulation-first-6f42c1?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-black?style=flat-square)
 
+[🇬🇧 English](README.en.md) · **🇹🇷 Türkçe**
+
 </div>
 
 ---
