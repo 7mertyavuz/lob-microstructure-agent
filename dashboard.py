@@ -13,6 +13,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
+
+# Windows konsolu cp1254 kullandığında emoji içeren print()'ler çökebilir.
+# stdout/stderr'i UTF-8'e sabitle (Py3.7+).
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
 
 from src.config import CONFIG
 from src.models import PendingTx
