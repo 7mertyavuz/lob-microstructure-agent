@@ -2,13 +2,13 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
-from src.predict.mlp import NumpyMLP, make_toxic_predictor, features_to_vector
-from src.predict.regime import RegimeRouter, TOXIC
-from src.predict.direction import predict
-from src.predict.economic import net_pnl_usd, economic_label, ArbFeasibility, gas_cost_usd
-from src.mev.arbitrage import detect_atomic_arb, net_positions, WETH
-from src.features.window import FlowFeatures
-from src.train.logreg import LogReg
+from lob_microstructure.predict.mlp import NumpyMLP, make_toxic_predictor, features_to_vector
+from lob_microstructure.predict.regime import RegimeRouter, TOXIC
+from lob_microstructure.predict.direction import predict
+from lob_microstructure.predict.economic import net_pnl_usd, economic_label, ArbFeasibility, gas_cost_usd
+from lob_microstructure.mev.arbitrage import detect_atomic_arb, net_positions, WETH
+from lob_microstructure.features.window import FlowFeatures
+from lob_microstructure.train.logreg import LogReg
 
 
 # ---------- NumpyMLP ----------

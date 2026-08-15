@@ -23,15 +23,15 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-from src.config import CONFIG
-from src.models import PendingTx
-from src.ingest.mempool_listener import MempoolListener
-from src.decode.tx_decoder import decode_tx
-from src.actor.classifier import classify
-from src.features.window import RollingFlow
-from src.predict.direction import predict
-from src.pipeline.bus import make_bus
-from src.dashboard.hub import Hub
+from lob_microstructure.config import CONFIG
+from lob_microstructure.models import PendingTx
+from lob_microstructure.ingest.mempool_listener import MempoolListener
+from lob_microstructure.decode.tx_decoder import decode_tx
+from lob_microstructure.actor.classifier import classify
+from lob_microstructure.features.window import RollingFlow
+from lob_microstructure.predict.direction import predict
+from lob_microstructure.pipeline.bus import make_bus
+from lob_microstructure.dashboard.hub import Hub
 
 logging.basicConfig(
     level=logging.INFO,

@@ -1,8 +1,8 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.models import PendingTx, Side
-from src.decode.tx_decoder import decode_tx, UNISWAP_V2_ROUTER
+from lob_microstructure.models import PendingTx, Side
+from lob_microstructure.decode.tx_decoder import decode_tx, UNISWAP_V2_ROUTER
 
 
 def _tx(input_data, value=10**18):

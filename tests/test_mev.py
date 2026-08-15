@@ -1,8 +1,8 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.mev.sandwich import detect_sandwiches
-from src.mev.zeromev_client import index_by_tx, label_for_tx, is_mev
+from lob_microstructure.mev.sandwich import detect_sandwiches
+from lob_microstructure.mev.zeromev_client import index_by_tx, label_for_tx, is_mev
 
 
 def test_detects_classic_sandwich():

@@ -2,8 +2,8 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.actor.agent_profiles import PROFILES, AgentProfile, WHALE, MEV_BOT, RETAIL
-from src.mev.decision import (
+from lob_microstructure.actor.agent_profiles import PROFILES, AgentProfile, WHALE, MEV_BOT, RETAIL
+from lob_microstructure.mev.decision import (
     decide_sandwich, decide_jit, decide_arbitrage, decide_builder_tip,
 )
 
@@ -28,9 +28,9 @@ def test_profile_field_contract_matches_plan():
 
 
 def test_whale_size_consistent_with_classifier_threshold():
-    # src/actor/classifier.py CONFIG.whale_usd_threshold varsayilan 100_000;
+    # lob_microstructure/actor/classifier.py CONFIG.whale_usd_threshold varsayilan 100_000;
     # WHALE profilinin ust siniri bu esigin cok uzerinde olmali (celiskisiz).
-    from src.config import CONFIG
+    from lob_microstructure.config import CONFIG
     assert WHALE.size_usd[1] >= CONFIG.whale_usd_threshold
 
 

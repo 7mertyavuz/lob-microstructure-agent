@@ -12,9 +12,9 @@ from __future__ import annotations
 
 import sys
 
-from src.train.dataset import make_synthetic, load_csv
-from src.train.logreg import LogReg
-from src.train.backtest import split, metrics, save_coeffs, baseline_metrics
+from lob_microstructure.train.dataset import make_synthetic, load_csv
+from lob_microstructure.train.logreg import LogReg
+from lob_microstructure.train.backtest import split, metrics, save_coeffs, baseline_metrics
 
 
 def main(argv: list[str]) -> None:

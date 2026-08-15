@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.api.flow_feed import FlowFeed, map_regime, REGIME_NORMAL, REGIME_TOXIC, REGIME_HIGHVOL
-from src.models import FlowState
+from lob_microstructure.api.flow_feed import FlowFeed, map_regime, REGIME_NORMAL, REGIME_TOXIC, REGIME_HIGHVOL
+from lob_microstructure.models import FlowState
 
 TOKENS = ["UniswapV2", "UniswapV3"]
 

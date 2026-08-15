@@ -1,9 +1,9 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.models import ActorSignal, ActorLabel, Side
-from src.features.window import RollingFlow
-from src.predict.direction import predict
+from lob_microstructure.models import ActorSignal, ActorLabel, Side
+from lob_microstructure.features.window import RollingFlow
+from lob_microstructure.predict.direction import predict
 
 
 def _sig(label, side, usd):

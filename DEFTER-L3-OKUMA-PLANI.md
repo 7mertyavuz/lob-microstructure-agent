@@ -44,7 +44,7 @@
 | `liq_map_skew` | float | [-1,1] | likidasyon yoğunluğu üstte/altta (mıknatıs etkisi) |
 | `ts`, `symbol` | — | — | UTC tz-aware, sembol anahtarı |
 
-- Yeni paket: `src/book/` → `state.py` (BookState), `keeper.py` (defter tutucu, boş), `sim.py` (deterministik sentetik defter üreteci), `features.py` (boş).
+- Yeni paket: `lob_microstructure/book/` → `state.py` (BookState), `keeper.py` (defter tutucu, boş), `sim.py` (deterministik sentetik defter üreteci), `features.py` (boş).
 - **`SimBookFeed`**: seed'li, rejim-anahtarlamalı sentetik L2 defteri (sakin/toksik/geniş-spread rejimleri) — mevcut `SimOrderbookFeed`'in ciddi hâli. Aynı seed → aynı defter dizisi.
 - `FlowFeed`'e paralel **`BookFeed`** okuma arayüzü: `latest(symbol) -> BookState`.
 
@@ -61,7 +61,7 @@
   - `aggTrade` → işlem bandı (tape).
   - `forceOrder` → **gerçek likidasyon olayları** (likidasyon haritası için altın kaynak).
   - REST: funding, open interest (likidasyon kümeleri tahmini için).
-- `src/book/keeper.py::BookKeeper` — seviye→miktar sözlüğü, en iyi N seviye görünümü, O(1) güncelleme; saf Python.
+- `lob_microstructure/book/keeper.py::BookKeeper` — seviye→miktar sözlüğü, en iyi N seviye görünümü, O(1) güncelleme; saf Python.
 - `lead_lag.py`'deki stub CEX fiyatı gerçek best-bid/ask orta noktasıyla beslenir → **lead-lag artık canlıda gerçek** (mevcut tahmin katmanına ilk somut katkı, bedavaya gelir).
 - WSS yoksa otomatik `SimBookFeed`'e düşer (mevcut `WSS_URL` deseniyle aynı).
 
@@ -71,7 +71,7 @@
 
 ## Faz D2 — Çekirdek L2 okuma özellikleri *(2–3 gün)*
 
-**Amaç:** `src/book/features.py` — her biri tek tek testli, saf fonksiyonlar.
+**Amaç:** `lob_microstructure/book/features.py` — her biri tek tek testli, saf fonksiyonlar.
 
 1. **Çok-seviyeli derinlik dengesizliği** — mid'e uzaklıkla üstel sönümlü ağırlık: `imb = (Σw·bid_qty − Σw·ask_qty) / (Σw·bid_qty + Σw·ask_qty)`. Tek seviyeli naif imbalance'tan (stub'daki gibi) çok daha dayanıklı.
 2. **Microprice (Stoikov)** — `(ask_qty·bid + bid_qty·ask)/(bid_qty+ask_qty)`; mid yerine adil fiyat. Lead-lag ve slipaj modeli bunu kullanır.

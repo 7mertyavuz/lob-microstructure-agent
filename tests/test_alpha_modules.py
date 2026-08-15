@@ -2,14 +2,14 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
-from src.mev.builder_tip import (priority_fee_per_gas, coinbase_transfer_wei,
+from lob_microstructure.mev.builder_tip import (priority_fee_per_gas, coinbase_transfer_wei,
                                  builder_payment, mev_score_from_payment)
-from src.mev.jit_liquidity import detect_jit
-from src.features.lead_lag import LeadLagSpread, estimate_lag
-from src.train.online import OnlineLogReg, FeatureMonitor
-from src.actor.classifier import classify
-from src.models import PendingTx, DecodedSwap, Side, ActorLabel
-from src.decode.tx_decoder import UNISWAP_V2_ROUTER
+from lob_microstructure.mev.jit_liquidity import detect_jit
+from lob_microstructure.features.lead_lag import LeadLagSpread, estimate_lag
+from lob_microstructure.train.online import OnlineLogReg, FeatureMonitor
+from lob_microstructure.actor.classifier import classify
+from lob_microstructure.models import PendingTx, DecodedSwap, Side, ActorLabel
+from lob_microstructure.decode.tx_decoder import UNISWAP_V2_ROUTER
 
 
 # ---------- Builder tip / coinbase ----------

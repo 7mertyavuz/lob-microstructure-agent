@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import pytest
 
-from src.book.state import BookState
-from src.features.window import FlowFeatures
-from src.predict.direction import predict, predict_toxic
-from src.predict.regime import RegimeRouter, NORMAL, TOXIC, THIN
-from src.predict.meta import MetaLabeler
-from src.predict.economic import ArbFeasibility
+from lob_microstructure.book.state import BookState
+from lob_microstructure.features.window import FlowFeatures
+from lob_microstructure.predict.direction import predict, predict_toxic
+from lob_microstructure.predict.regime import RegimeRouter, NORMAL, TOXIC, THIN
+from lob_microstructure.predict.meta import MetaLabeler
+from lob_microstructure.predict.economic import ArbFeasibility
 
 
 def _book(depth_imbalance: float = 0.0, spread_bps: float = 5.0,

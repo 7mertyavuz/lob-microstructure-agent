@@ -3,7 +3,7 @@
 Mempool → decode → classify → flow feature → yön tahmini + bus.
 
 Faz 1e (CAS entegrasyonu, opsiyonel iyileştirme): akış besleme/okuma artık
-`src.api.FlowFeed` üzerinden tek bir yoldan geçiyor (`feed.feed_live_signal()`
+`lob_microstructure.api.FlowFeed` üzerinden tek bir yoldan geçiyor (`feed.feed_live_signal()`
 / `feed.flow`), ham `RollingFlow`'u main.py'de ayrıca yönetmek yerine. Bu,
 CAS köprüsünün (FlowFeed) canlı modda da gerçek besleme yolunu kullandığını
 garanti eder ve tek doğruluk kaynağı sağlar. Ekrana basılan çıktı ve akış
@@ -24,14 +24,14 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from src.config import CONFIG
-from src.models import PendingTx
-from src.ingest.mempool_listener import MempoolListener
-from src.decode.tx_decoder import decode_tx
-from src.actor.classifier import classify
-from src.api import FlowFeed
-from src.predict.direction import predict
-from src.pipeline.bus import make_bus
+from lob_microstructure.config import CONFIG
+from lob_microstructure.models import PendingTx
+from lob_microstructure.ingest.mempool_listener import MempoolListener
+from lob_microstructure.decode.tx_decoder import decode_tx
+from lob_microstructure.actor.classifier import classify
+from lob_microstructure.api import FlowFeed
+from lob_microstructure.predict.direction import predict
+from lob_microstructure.pipeline.bus import make_bus
 
 logging.basicConfig(
     level=logging.INFO,

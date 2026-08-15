@@ -4,8 +4,8 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.book.state import BookLevel, RawBook
-from src.book import features as F
+from lob_microstructure.book.state import BookLevel, RawBook
+from lob_microstructure.book import features as F
 from datetime import datetime, timezone
 
 

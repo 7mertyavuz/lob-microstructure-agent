@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.book.dex_virtual_book import DexVirtualBook, tick_to_price, price_to_tick
-from src.book import BookFeed, BookState
+from lob_microstructure.book.dex_virtual_book import DexVirtualBook, tick_to_price, price_to_tick
+from lob_microstructure.book import BookFeed, BookState
 
 
 class TestTickMath:

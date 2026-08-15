@@ -6,8 +6,8 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.book import BookFeed, SimBookFeed, BookState
-from src.book.keeper import BookKeeper
+from lob_microstructure.book import BookFeed, SimBookFeed, BookState
+from lob_microstructure.book.keeper import BookKeeper
 
 SYMBOLS = ["BTCUSDT", "ETHUSDT"]
 

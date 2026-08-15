@@ -2,9 +2,9 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
-from src.train.dataset import make_synthetic
-from src.train.logreg import LogReg
-from src.train.backtest import split, metrics
+from lob_microstructure.train.dataset import make_synthetic
+from lob_microstructure.train.logreg import LogReg
+from lob_microstructure.train.backtest import split, metrics
 
 
 def test_recovers_true_coeffs():

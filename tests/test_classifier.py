@@ -1,9 +1,9 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.models import PendingTx, DecodedSwap, Side, ActorLabel
-from src.actor.classifier import classify
-from src.decode.tx_decoder import UNISWAP_V2_ROUTER, UNISWAP_V3_ROUTER
+from lob_microstructure.models import PendingTx, DecodedSwap, Side, ActorLabel
+from lob_microstructure.actor.classifier import classify
+from lob_microstructure.decode.tx_decoder import UNISWAP_V2_ROUTER, UNISWAP_V3_ROUTER
 
 BASE = 20 * 10**9
 

@@ -2,14 +2,14 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
-from src.features.fracdiff import ffd_weights, frac_diff_ffd
-from src.features.window import FlowFeatures
-from src.predict.regime import GaussianHMM2, RegimeRouter, NORMAL, TOXIC
-from src.predict.direction import predict, predict_toxic
-from src.predict.meta import MetaLabeler, primary_direction
-from src.train.dataset import make_synthetic
-from src.train.logreg import LogReg
-from src.train.backtest import split, metrics
+from lob_microstructure.features.fracdiff import ffd_weights, frac_diff_ffd
+from lob_microstructure.features.window import FlowFeatures
+from lob_microstructure.predict.regime import GaussianHMM2, RegimeRouter, NORMAL, TOXIC
+from lob_microstructure.predict.direction import predict, predict_toxic
+from lob_microstructure.predict.meta import MetaLabeler, primary_direction
+from lob_microstructure.train.dataset import make_synthetic
+from lob_microstructure.train.logreg import LogReg
+from lob_microstructure.train.backtest import split, metrics
 
 
 # ---------- Fractional differencing ----------

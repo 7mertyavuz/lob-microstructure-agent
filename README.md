@@ -175,24 +175,24 @@ python main.py
 
 ## 📚 Modül / Katman Rehberi
 
-### `src/ingest/` — Girdi Katmanı
+### `lob_microstructure/ingest/` — Girdi Katmanı
 
 - **`mempool_listener.py`**: WebSocket üzerinden mempool tx'lerini dinler veya deterministik simülasyon üretir.
 - Canlı modda `WSS_URL`'e bağlanır; simülasyon modunda seed'li `PendingTx` akışı üretir.
 
-### `src/decode/` — Çözümleme Katmanı
+### `lob_microstructure/decode/` — Çözümleme Katmanı
 
 - **`tx_decoder.py`**: Uniswap V2/V3/V4 ve Universal Router çağrılarını çözümleyerek `DecodedSwap` üretir.
 - Bilinen router adresleri ve metod imzalarıyla çalışır.
 
-### `src/actor/` — Aktör Katmanı
+### `lob_microstructure/actor/` — Aktör Katmanı
 
 - **`classifier.py`**: Swap'ı WHALE / MEV_BOT / RETAIL olarak etiketler.
 - **`wallet_profiler.py`**: Cüzdan yaş, bakiye, hacim gibi özellikleri çıkarır.
 - **`onchain_profiler.py`**: Zincir üstü ek sinyallerle profili zenginleştirir.
 - **`agent_profiles.py`**: CAS simülatörü için profil şablonları (`WHALE`, `MEV_BOT`, `RETAIL`).
 
-### `src/mev/` — MEV Tespiti
+### `lob_microstructure/mev/` — MEV Tespiti
 
 | Modül | Görev |
 |---|---|
@@ -203,14 +203,14 @@ python main.py
 | `decision.py` | Simülatör-dostu karar cephesi |
 | `zeromev_client.py` | ZeroMEV API entegrasyonu |
 
-### `src/features/` — Mikroyapı Özellikleri
+### `lob_microstructure/features/` — Mikroyapı Özellikleri
 
 - **`window.py`**: `RollingFlow` — kayan zaman penceresinde akış metrikleri.
 - **`vpin.py`**: VPIN (Volume-Synchronized Probability of Informed Trading) hesabı.
 - **`lead_lag.py`**: CEX-DEX lead-lag spreadi.
 - **`fracdiff.py`**: Kısmi fark alma (fracdiff) özellikleri.
 
-### `src/book/` — Sanal Emir Defteri
+### `lob_microstructure/book/` — Sanal Emir Defteri
 
 - **`state.py`**: `RawBook`, `BookLevel`, `Trade`, `OrderEvent`, `BookState` veri modelleri.
 - **`features.py`**: Derinlik dengesizliği, microprice, OFI, book slope, Kyle's λ, iceberg, spoofing, absorption, sweep, likidasyon skew.
@@ -219,7 +219,7 @@ python main.py
 - **`feed.py`**: `BookFeed` okuma arayüzü.
 - **`dex_virtual_book.py`**: Uniswap V3 tick likiditesinden sanal defter.
 
-### `src/predict/` — Tahmin Katmanı
+### `lob_microstructure/predict/` — Tahmin Katmanı
 
 | Modül | Görev |
 |---|---|
@@ -229,23 +229,23 @@ python main.py
 | `mlp.py` | Saf NumPy MLP stand-in |
 | `economic.py` | Maliyet-duyarlı filtreleme |
 
-### `src/train/` — Eğitim Altyapısı
+### `lob_microstructure/train/` — Eğitim Altyapısı
 
 - **`dataset.py`**: Sentetik ve CSV veri yükleyici.
 - **`logreg.py`**: Saf NumPy logistic regresyon.
 - **`backtest.py`**: Walk-forward bölme, metrik ve katsayı kaydetme.
 - **`online.py`**: Online öğrenme / drift izleme.
 
-### `src/api/` — CAS Köprüsü
+### `lob_microstructure/api/` — CAS Köprüsü
 
 - **`flow_feed.py`**: `FlowFeed.latest(token) -> FlowState` arayüzü.
 - **`sim_env.py`**: Simülatörden enjekte edilen emirleri kabul eden çevre adaptörü.
 
-### `src/pipeline/` — Mesaj Boru Hattı
+### `lob_microstructure/pipeline/` — Mesaj Boru Hattı
 
 - **`bus.py`**: Bellek-içi veya Redis/Kafka backend'li olay otobüsü.
 
-### `src/dashboard/` — Canlı Dashboard
+### `lob_microstructure/dashboard/` — Canlı Dashboard
 
 - **`hub.py`**: WebSocket üzerinden istemcilere broadcast.
 

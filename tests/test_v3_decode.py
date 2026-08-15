@@ -2,8 +2,8 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from eth_abi import encode
-from src.models import PendingTx, Side
-from src.decode.tx_decoder import decode_tx, UNISWAP_V3_ROUTER, WETH
+from lob_microstructure.models import PendingTx, Side
+from lob_microstructure.decode.tx_decoder import decode_tx, UNISWAP_V3_ROUTER, WETH
 
 TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  # USDC
 

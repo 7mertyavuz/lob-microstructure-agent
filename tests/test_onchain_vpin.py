@@ -1,8 +1,8 @@
 import sys, os, asyncio
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.actor.onchain_profiler import OnChainProfiler
-from src.features.vpin import VPIN
+from lob_microstructure.actor.onchain_profiler import OnChainProfiler
+from lob_microstructure.features.vpin import VPIN
 
 
 # ---- VPIN ----
