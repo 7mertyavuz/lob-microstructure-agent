@@ -159,6 +159,7 @@ class BookFeed:
             symbol=symbol,
             spread_bps=max(0.0, spread_bps),
             microprice=micro,
+            mid=mid,
             depth_imbalance=depth_imb,
             ofi=ofi,
             queue_imbalance=q_imb,

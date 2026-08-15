@@ -117,6 +117,7 @@ ham/temiz metrik verir, ağırlık kararı vermez.
 | `symbol` | `str` | — | sembol anahtarı |
 | `spread_bps` | `float` | `≥0` | en iyi alış-satış farkı (bps) |
 | `microprice` | `float` | `>0` | derinlik-ağırlıklı adil fiyat (Stoikov) |
+| `mid` | `float` | `>0` | en iyi alış-satış orta noktası |
 | `depth_imbalance` | `float` | `[-1,1]` | çok-seviyeli, mesafe-ağırlıklı derinlik dengesizliği |
 | `ofi` | `float` | serbest | event-bazlı OFI (Cont-Kukanov-Stoikov) |
 | `queue_imbalance` | `float` | `[-1,1]` | en iyi seviye kuyruk dengesizliği |

@@ -113,6 +113,10 @@ class BookState:
     queue_imbalance: float      # [-1,1], en iyi seviye kuyruk dengesizliği
     book_slope: float           # ≥0, defter eğimi (esneklik)
     kyle_lambda: float          # ≥0, hacim başına fiyat etkisi
+    # `mid` olmadan tüketici `microprice_dev = (microprice-mid)/mid` sapmasını
+    # HESAPLAYAMAZ. Uzun süre verilmiyordu ve cas-market-simulator bu yüzden
+    # sapmayı her zaman tam 0.0 olarak üretiyordu (sessiz ölü yol).
+    mid: float = 0.0            # >0, en iyi alış-satış orta noktası
     iceberg_score: float = 0.0  # [0,1], gizli likidite şüphesi
     spoof_score: float = 0.0    # [0,1], yanıltıcı katmanlama şüphesi
     absorption: float = 0.0     # [-1,1], + = satış baskısı emiliyor (bid güçlü)
